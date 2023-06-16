@@ -7,6 +7,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Post {
+  id        String   @id @default(cuid())
+  body      Json?
+  title     String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [authorId], references: [id])
+  authorId  String?
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -42,6 +53,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  posts         Post[]
 }
 
 model VerificationToken {

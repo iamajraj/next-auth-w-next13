@@ -1,5 +1,5 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions, getServerSession } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './db';
 
@@ -16,17 +16,35 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user }) {
+      const dbuser = await prisma.user.findFirst({
+        where: {
+          email: token.email,
+        },
+      });
+
+      if (!dbuser) {
         token.id = user.id;
+        return token;
       }
-      return token;
+
+      return {
+        id: dbuser.id,
+        name: dbuser.name,
+        email: dbuser.email,
+        picture: dbuser.image,
+      };
     },
     session({ token, session }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
+      if (token) {
+        session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.picture;
       }
       return session;
     },
   },
 } as NextAuthOptions;
+
+export const getAuthSession = () => getServerSession(authOptions);
